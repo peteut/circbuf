@@ -1,6 +1,6 @@
 from nose import tools
 import collections.abc
-#import functools
+import functools
 import circbuf
 
 def test_init():
@@ -69,3 +69,13 @@ def test_iterator():
         dut.produced(length)
 
     tools.eq_(tuple(dut), tuple(range(1, 16)))
+
+
+def test_readinto():
+    dut = circbuf.CircBuf(16)
+    readinto = functools.partial(circbuf.readinto, dut)
+
+    nbytes = readinto(bytes.fromhex('001122'))
+    tools.eq_((nbytes, bytes(dut)), (3, bytes.fromhex('001122')))
+    tools.eq_(readinto(bytes()), None)
+    tools.eq_(*(dut.space_to_end, readinto(bytes(100))))

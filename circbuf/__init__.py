@@ -3,7 +3,7 @@ import functools
 import contextlib
 import threading
 
-__all__ = ('ResourceManager', 'CircBuf')
+__all__ = ('ResourceManager', 'CircBuf', 'readinto')
 
 def _require_lock(name):
     '''
@@ -52,6 +52,7 @@ class ResourceManager:
 
     def __exit__(self, *exc):
         self._release_resource()
+
 
 
 DEFAULT_BUFLEN = 2 ** 12
@@ -188,3 +189,19 @@ class CircBuf(collections.abc.Iterable):
                         yield val
 
         return generator()
+
+
+def readinto(buf, readbuf):
+    '''
+    :param buf: buffer to read into
+    :param readbuf: buffer to read from
+    :returns: number of bytes read
+    '''
+    with buf.producer_buf as mv:
+        length = min(map(len, (readbuf, mv)))
+        if not length:
+            return None
+        mv[: length] = readbuf[: length]
+        buf.produced(length)
+
+    return length
