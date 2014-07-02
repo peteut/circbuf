@@ -14,7 +14,7 @@ buf = circbuf.CircBuf()
 # Produce data
 with buf.producer_buf as mv:
     mv[0] = 42
-    circ_buf.produced(1)
+    buf.produced(1)
 
-print('First entry: {}'.format(next(buf))) # First entry: 42
+print('First entry: {}'.format(next(iter(buf)))) # First entry: 42
 ```
