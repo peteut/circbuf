@@ -23,6 +23,13 @@ def _require_lock(name):
 
 
 class ResourceManager:
+    '''
+    Context manager that accepts acquisition and release functions,
+    along with an optinal validation function.
+    '''
+
+    __slots__ = ('_acquire_resource', '_release_resource',
+                 '_check_resource')
 
     def __init__(self, acquire_resource, release_resource,
                  check_resource=None):
