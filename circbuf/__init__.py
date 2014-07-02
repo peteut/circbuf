@@ -38,7 +38,7 @@ class ResourceManager:
         if check_resource is None:
             def check_resource_ok(resource):
                 return True
-        self._check_resource = check_resource_ok
+        self._check_resource = check_resource or check_resource_ok
 
     @contextlib.contextmanager
     def _cleanup_on_error(self):

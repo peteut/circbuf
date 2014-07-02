@@ -1,7 +1,43 @@
 from nose import tools
+from  unittest import mock
 import collections.abc
 import functools
 import circbuf
+
+
+def test_resource_manger_acquire_release():
+    acquire = mock.Mock(return_value=42)
+    release = mock.Mock()
+    dut = circbuf.ResourceManager(acquire, release)
+
+    with dut as res:
+        tools.eq_(res, 42)
+        tools.eq_(acquire.call_count, 1)
+        tools.eq_(release.call_count, 0)
+    tools.eq_(acquire.call_count, 1)
+    tools.eq_(release.call_count, 1)
+
+
+def test_resource_manager_check_ok():
+    acquire = mock.Mock(return_value=42)
+    release = mock.Mock()
+    check = mock.Mock(return_value=True)
+    dut = circbuf.ResourceManager(acquire, release, check)
+
+    with dut:
+        tools.eq_(check.call_count, 1)
+        tools.eq_(check.call_args, ((42,),))
+
+
+@tools.raises(RuntimeError)
+def test_resource_manger_check_nok():
+    acquire = mock.Mock()
+    release = mock.Mock()
+    check = mock.Mock(return_value=False)
+    dut = circbuf.ResourceManager(acquire, release, check)
+
+    with dut:
+        pass
 
 def test_init():
     dut = circbuf.CircBuf(128)
@@ -21,6 +57,7 @@ def test_produced_requires_lock():
     dut = circbuf.CircBuf()
 
     dut.produced(1)
+
 
 @tools.raises(RuntimeError)
 def test_consumed_requires_lock():
