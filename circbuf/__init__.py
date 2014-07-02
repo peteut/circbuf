@@ -1,4 +1,7 @@
-import collections.abc
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 import functools
 import contextlib
 import threading
@@ -64,7 +67,7 @@ class ResourceManager:
 
 DEFAULT_BUFLEN = 2 ** 12
 
-class CircBuf(collections.abc.Iterable):
+class CircBuf(Iterable):
     '''
     An implementation of a circular buffer, derived from
     `include/linux/circ_buf.h`_.
