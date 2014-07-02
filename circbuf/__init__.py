@@ -3,6 +3,8 @@ import functools
 import contextlib
 import threading
 
+__all__ = ('ResourceManager', 'CircBuf')
+
 def _require_lock(name):
     '''
     Ensure :class:`threading.Lock` is acquired.
@@ -56,11 +58,15 @@ DEFAULT_BUFLEN = 2 ** 12
 
 class CircBuf(collections.abc.Iterable):
     '''
-    This is an implementation of `include/linux/circ_buf.h`_.
+    An implementation of a circular buffer, derived from
+    `include/linux/circ_buf.h`_.
 
     .. _`include/linux/circ_buf.h`:
         https://github.com/torvalds/linux/blob/v3.2/include/linux/circ_buf.h
     '''
+
+    __slots__ = ('_buf', '_head', '_tail', '_consumer_lock', '_producer_lock')
+
     def __init__(self, buflen=DEFAULT_BUFLEN):
         if buflen & (buflen - 1):
             raise ValueError('buflen must be power of 2')
