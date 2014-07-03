@@ -1,5 +1,8 @@
 # CircBuf
 
+[![Build Status](https://travis-ci.org/peteut/circbuf.svg?
+branch=master)](https://travis-ci.org/peteut/circbuf)
+
 `circbuf.CircBuf` implements a circular buffer for Python.
 It allows for zero copy operation, i.e. it uses `memoryview`
 to expose consumer and producer buffers.
