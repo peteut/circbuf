@@ -39,7 +39,6 @@ setup(
     setup_requires=SETUP_REQUIRES,
     install_requires=INSTALL_REQUIRES,
     tests_require=TESTS_REQUIRE,
-    test_suite='nose.collector',
     platforms='all',
     classifiers=CLASSIFIERS
 )
