@@ -5,10 +5,10 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
 
-required_version = (3, 2)
-if sys.version_info < required_version:
+REQUIRED_VERSION = (3, 2)
+if sys.version_info < REQUIRED_VERSION:
     raise SystemExit('circbuf requires Python {} or later'.format(
-        '.'.join(map(str, required_version))))
+        '.'.join(map(str, REQUIRED_VERSION))))
 
 CLASSIFIERS = (
     'Development Status :: 4 - Beta',
