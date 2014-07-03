@@ -199,6 +199,9 @@ class CircBuf(Iterable):
                         self.consumed(1)
                         yield val
 
+            if len(self):
+                generator()
+
         return generator()
 
 

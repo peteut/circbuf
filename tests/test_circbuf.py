@@ -118,6 +118,18 @@ def test_iterator():
     tools.eq_(tuple(dut), tuple(range(1, 16)))
 
 
+def test_iterator_wrap_around():
+    dut = circbuf.CircBuf(16)
+
+    with dut.producer_buf: dut.produced(5)
+    tools.eq_(len(dut), 5)
+    # fill buffer
+    with dut.producer_buf as buf: dut.produced(len(buf))
+    with dut.producer_buf as buf: dut.produced(len(buf))
+    # test wrap around
+    tools.eq_(len(dut), 15, 'shall wrap around')
+
+
 def test_space_avail():
     buf = circbuf.CircBuf(16)
     dut = circbuf.space_avail
