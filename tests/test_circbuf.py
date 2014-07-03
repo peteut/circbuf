@@ -118,11 +118,28 @@ def test_iterator():
     tools.eq_(tuple(dut), tuple(range(1, 16)))
 
 
-def test_readinto():
-    dut = circbuf.CircBuf(16)
-    readinto = functools.partial(circbuf.readinto, dut)
+def test_space_avail():
+    buf = circbuf.CircBuf(16)
+    dut = circbuf.space_avail
 
-    nbytes = readinto(bytes.fromhex('001122'))
-    tools.eq_((nbytes, bytes(dut)), (3, bytes.fromhex('001122')))
-    tools.eq_(readinto(bytes()), None)
-    tools.eq_(*(dut.space_to_end, readinto(bytes(100))))
+    def produce(n):
+        with buf.producer_buf: buf.produced(n)
+
+    def consume(n):
+        with buf.consumer_buf: buf.consumed(n)
+
+    tools.eq_(dut(buf), 15)
+    produce(1)
+    tools.eq_(dut(buf), 14)
+    consume(1)
+    tools.eq_(dut(buf), 15)
+
+
+def test_readinto():
+    buf = circbuf.CircBuf(16)
+    dut = functools.partial(circbuf.readinto, buf)
+
+    nbytes = dut(bytes.fromhex('001122'))
+    tools.eq_((nbytes, bytes(buf)), (3, bytes.fromhex('001122')))
+    tools.eq_(dut(bytes()), None)
+    tools.eq_(*(circbuf.space_avail(buf), dut(bytes(100))))

@@ -202,18 +202,37 @@ class CircBuf(Iterable):
         return generator()
 
 
+def space_avail(buf):
+    '''
+    :returns: number of bytes available in buf
+    '''
+    return buf.buflen - 1 - len(buf)
+
+
 def readinto(buf, readbuf):
     '''
     :param buf: buffer to read into
     :param readbuf: buffer to read from
     :returns: number of bytes read
     '''
-    with buf.producer_buf as mv:
-        length = min(map(len, (readbuf, mv)))
-        if not length:
-            return None
-        mv[: length] = readbuf[: length]
-        buf.produced(length)
+    def do(written):
+        with buf.producer_buf as mv:
+            length = min(map(len, (mv, readbuf[written:])))
+            if not length:
+                return written
+            mv[: length] = readbuf[: length]
+            buf.produced(length)
+        written += length
+        if written == towrite or length == 0:
+            return written
 
-        return length
+        return do(written)
+
+    if not min(space_avail(buf), len(readbuf)):
+        return None
+
+    towrite = len(readbuf)
+    result = do(0)
+
+    return result if result else None
 
