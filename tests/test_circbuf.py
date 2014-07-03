@@ -1,6 +1,6 @@
 from nose import tools
 import sys
-IS_PY32 = sys.version_info[:2] == (3, 2)
+IS_PY32 = sys.version_info < (3, 3)
 if IS_PY32:
     import mock
     from collections import Iterable

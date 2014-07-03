@@ -6,7 +6,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
 
 required_version = (3, 2)
-if sys.version_info[:2] < required_version:
+if sys.version_info < required_version:
     raise SystemExit('circbuf requires Python {} or later'.format(
         '.'.join(map(str, required_version))))
 
@@ -21,10 +21,10 @@ CLASSIFIERS = (
     'Topic :: Software Development :: Libraries :: Python Modules'
 )
 
-SETUP_REQUIRES = ['nose>=1.3']
+SETUP_REQUIRES = []
 INSTALL_REQUIRES = []
-TESTS_REQUIRE = []
-if sys.version_info[:2] == (3, 2):
+TESTS_REQUIRE = ['nose>=1.3', 'coverage>=3.7']
+if sys.version_info < (3, 3):
     TESTS_REQUIRE.append('mock>=1.0')
     INSTALL_REQUIRES.append('contextlib2>=0.4')
 

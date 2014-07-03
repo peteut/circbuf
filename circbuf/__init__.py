@@ -1,5 +1,5 @@
 import sys
-IS_PY32 = sys.version_info[:2] == (3, 2)
+IS_PY32 = sys.version_info < (3, 3)
 if IS_PY32:
     import contextlib2 as contextlib
     from collections import Iterable
@@ -36,32 +36,25 @@ class ResourceManager:
     '''
 
     __slots__ = ('_acquire_resource', '_release_resource',
-                 '_check_resource')
+                 '_check_resource_ok')
 
     def __init__(self, acquire_resource, release_resource,
                  check_resource_ok=None):
         self._acquire_resource = acquire_resource
         self._release_resource = release_resource
-        if check_resource_ok is None:
-            def check_resource_ok(resource):
-                return True
-        self._check_resource = check_resource_ok
-
-    @contextlib.contextmanager
-    def _cleanup_on_error(self):
-        with contextlib. ExitStack() as stack:
-            stack.push(self)
-            yield
-            # Validation check passed and didn't raise an exception,
-            # pass the resource back to our caller.
-            stack.pop_all()
+        self._check_resource_ok = check_resource_ok
 
     def __enter__(self):
         resource = self._acquire_resource()
-        with self._cleanup_on_error():
-            if not self._check_resource(resource):
-                raise RuntimeError(
-                    'Validation failed for {!r}'.format(resource))
+        if self._check_resource_ok is not None:
+            with contextlib.ExitStack() as stack:
+                stack.push(self)
+                if not self._check_resource_ok(resource):
+                    msg = 'Validation failed for {!r}'
+                    raise RuntimeError(msg.format(resource))
+                # The validation check passed and didn't raise an exception,
+                # keep the resource, and pass it back to our caller.
+                stack.pop_all()
         return resource
 
     def __exit__(self, *exc):
@@ -222,4 +215,5 @@ def readinto(buf, readbuf):
         mv[: length] = readbuf[: length]
         buf.produced(length)
 
-    return length
+        return length
+
