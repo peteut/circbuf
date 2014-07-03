@@ -5,8 +5,8 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
 
-required_version = (3, 3)
-if sys.version_info < required_version:
+required_version = (3, 2)
+if sys.version_info[:2] < required_version:
     raise SystemExit('circbuf requires Python {} or later'.format(
         '.'.join(map(str, required_version))))
 
@@ -15,12 +15,18 @@ CLASSIFIERS = (
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python 3',
+    'Programming Language :: Python 3.2',
     'Programming Language :: Python 3.3',
     'Programming Language :: Python 3.4',
     'Topic :: Software Development :: Libraries :: Python Modules'
 )
 
-INSTALL_REQUIRES = ('',)
+SETUP_REQUIRES = ['nose>=1.3']
+INSTALL_REQUIRES = []
+TESTS_REQUIRE = []
+if sys.version_info[:2] == (3, 2):
+    TESTS_REQUIRE.append('mock>=1.0')
+    INSTALL_REQUIRES.append('contextlib2>=0.4')
 
 setup(
     name='circbuf',
@@ -29,8 +35,10 @@ setup(
     long_description=README,
     author='Alain Péteut',
     author_email='alain.peteut@yahoo.com',
-    packages=find_packages(),
-    setup_requires=('nose>=1.0',),
+    packages=find_packages(exclude=('tests',)),
+    setup_requires=SETUP_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
+    tests_require=TESTS_REQUIRE,
     test_suite='nose.collector',
     platforms='all',
     classifiers=CLASSIFIERS

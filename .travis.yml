@@ -4,4 +4,4 @@ python:
     -   "3.3"
     -   "3.4"
 
-script: nosetests
+script: python setup.py test

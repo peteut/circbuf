@@ -1,6 +1,12 @@
 from nose import tools
-from  unittest import mock
-import collections.abc
+import sys
+IS_PY32 = sys.version_info[:2] == (3, 2)
+if IS_PY32:
+    import mock
+    from collections import Iterable
+else:
+    from unittest import mock
+    from collections.abc import Iterable
 import functools
 import circbuf
 
@@ -42,7 +48,7 @@ def test_resource_manger_check_nok():
 def test_init():
     dut = circbuf.CircBuf(128)
 
-    tools.ok_(isinstance(dut, collections.abc.Iterable))
+    tools.ok_(isinstance(dut, Iterable))
     tools.eq_(len(dut), 0)
     tools.eq_(dut.buflen, 128)
 
@@ -96,7 +102,11 @@ def test_iterator():
     def consume(n):
         with dut.consumer_buf: dut.consumed(n)
 
-    with dut.producer_buf as buf: buf[0] = 42
+    with dut.producer_buf as buf:
+        if IS_PY32:
+            buf[0] = bytes((42,))
+        else:
+            buf[0] = 42
     produce(1)
     tools.eq_(tuple(dut), (42,))
 

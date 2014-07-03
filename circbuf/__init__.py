@@ -1,9 +1,13 @@
-try:
-    from collections.abc import Iterable
-except ImportError:
+import sys
+IS_PY32 = sys.version_info[:2] == (3, 2)
+if IS_PY32:
+    import contextlib2 as contextlib
     from collections import Iterable
+else:
+    import contextlib
+    from collections.abc import Iterable
+import operator
 import functools
-import contextlib
 import threading
 
 __all__ = ('ResourceManager', 'CircBuf', 'readinto')
@@ -35,13 +39,13 @@ class ResourceManager:
                  '_check_resource')
 
     def __init__(self, acquire_resource, release_resource,
-                 check_resource=None):
+                 check_resource_ok=None):
         self._acquire_resource = acquire_resource
         self._release_resource = release_resource
-        if check_resource is None:
+        if check_resource_ok is None:
             def check_resource_ok(resource):
                 return True
-        self._check_resource = check_resource or check_resource_ok
+        self._check_resource = check_resource_ok
 
     @contextlib.contextmanager
     def _cleanup_on_error(self):
@@ -192,8 +196,12 @@ class CircBuf(Iterable):
             def release():
                 self._consumer_lock.release()
 
-            while len(self):
-                with ResourceManager(acquire, release) as mv:
+            with ResourceManager(acquire, release) as mv:
+                if IS_PY32:
+                    for val in map(operator.itemgetter(0), mv):
+                        self.consumed(1)
+                        yield val
+                else:
                     for val in mv:
                         self.consumed(1)
                         yield val
