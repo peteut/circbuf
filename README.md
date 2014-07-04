@@ -3,10 +3,10 @@
 [![Build Status](https://travis-ci.org/peteut/circbuf.svg?
 branch=master)](https://travis-ci.org/peteut/circbuf)
 
-`circbuf.CircBuf` implements a circular buffer for Python.
+`circbuf` implements a circular buffer for Python.
 It allows for zero copy operation, i.e. it uses `memoryview`
 to expose consumer and producer buffers.
-Access to the buffer is synchronise by locks.
+Access to the buffer is synchronised by locks, managed by context managers.
 
 ## Example
 
@@ -21,3 +21,14 @@ with buf.producer_buf as mv:
 
 print('First entry: {}'.format(next(iter(buf)))) # First entry: 42
 ```
+## Features
+
+* Pure Python
+* Minimises allocation of big memory chunks
+* Automatic access synchronisation
+* Tested on Python 3.2, 3.3, 3.4
+
+## Useful Links
+
+* [circbuf.h](https://github.com/torvalds/linux/blob/master/include/linux/circ_buf.h)
+* [memoryview](https://docs.python.org/3.4/library/stdtypes.html#memoryview)
