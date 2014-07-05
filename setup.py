@@ -3,7 +3,9 @@ import sys
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.md')).read()
+
+with open(os.path.join(here, 'README.md')) as f:
+    README = f.read()
 
 REQUIRED_VERSION = (3, 2)
 if sys.version_info < REQUIRED_VERSION:
@@ -21,12 +23,12 @@ CLASSIFIERS = (
     'Topic :: Software Development :: Libraries :: Python Modules'
 )
 
-SETUP_REQUIRES = []
-INSTALL_REQUIRES = []
-TESTS_REQUIRE = ['nose>=1.3', 'coverage>=3.7']
+setup_requires = []
+install_requires = []
+tests_require = ['nose>=1.3', 'coverage>=3.7']
 if sys.version_info < (3, 3):
-    TESTS_REQUIRE.append('mock>=1.0')
-    INSTALL_REQUIRES.append('contextlib2>=0.4')
+    tests_require.append('mock>=1.0')
+    install_requires.append('contextlib2>=0.4')
 
 setup(
     name='circbuf',
@@ -35,10 +37,11 @@ setup(
     long_description=README,
     author='Alain Péteut',
     author_email='alain.peteut@yahoo.com',
-    packages=find_packages(exclude=('tests',)),
-    setup_requires=SETUP_REQUIRES,
-    install_requires=INSTALL_REQUIRES,
-    tests_require=TESTS_REQUIRE,
+    packages=find_packages(exclude=['tests']),
+    include_package_data=True,
+    setup_requires=setup_requires,
+    install_requires=install_requires,
+    tests_require=tests_require,
     platforms='all',
     classifiers=CLASSIFIERS
 )
