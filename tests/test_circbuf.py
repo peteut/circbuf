@@ -146,6 +146,21 @@ def test_space_avail():
     consume(1)
     tools.eq_(dut(buf), 15)
 
+@tools.raises(ValueError)
+def test_released_producer_buf():
+    buf = circbuf.CircBuf(16)
+    dut = None
+
+    with buf.producer_buf as mv: dut = mv
+    dut[0]
+
+@tools.raises(ValueError)
+def test_released_consumer_buf():
+    buf = circbuf.CircBuf(16)
+    dut = None
+
+    with buf.consumer_buf as mv: dut = mv
+    dut[0]
 
 def test_readinto():
     buf = circbuf.CircBuf(16)

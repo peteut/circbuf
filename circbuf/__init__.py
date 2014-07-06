@@ -75,7 +75,8 @@ class CircBuf(Iterable):
         https://github.com/torvalds/linux/blob/v3.2/include/linux/circ_buf.h
     '''
 
-    __slots__ = ('_buf', '_head', '_tail', '_consumer_lock', '_producer_lock')
+    __slots__ = ('_buf', '_head', '_tail', '_consumer_lock', '_producer_lock',
+                 '__consumer_mv', '__producer_mv')
 
     def __init__(self, buflen=DEFAULT_BUFLEN):
         if buflen & (buflen - 1):
@@ -120,11 +121,11 @@ class CircBuf(Iterable):
         n = (end + tail) & (size - 1)
         return n if n <= end else end + 1
 
-    def _produce_mv(self):
+    def _producer_mv(self):
         buf, head = self._buf, self._head
         return memoryview(buf)[head: head + self.space_to_end]
 
-    def _consume_mv(self):
+    def _consumer_mv(self):
         buf, tail = self._buf, self._tail
         return memoryview(buf)[tail:tail + self.cnt_to_end]
 
@@ -136,9 +137,11 @@ class CircBuf(Iterable):
         '''
         def acquire():
             self._producer_lock.acquire()
-            return self._produce_mv()
+            self.__producer_mv = self._producer_mv()
+            return self.__producer_mv
 
         def release():
+            self.__producer_mv.release()
             self._producer_lock.release()
 
         return ResourceManager(acquire, release)
@@ -151,9 +154,11 @@ class CircBuf(Iterable):
         '''
         def acquire():
             self._consumer_lock.acquire()
-            return self._consume_mv()
+            self.__consumer_mv = self._consumer_mv()
+            return self.__consumer_mv
 
         def release():
+            self.__consumer_mv.release()
             self._consumer_lock.release()
 
         return ResourceManager(acquire, release)
@@ -186,7 +191,7 @@ class CircBuf(Iterable):
 
             def acquire():
                 self._consumer_lock.acquire()
-                return self._consume_mv()
+                return self._consumer_mv()
 
             def release():
                 self._consumer_lock.release()
