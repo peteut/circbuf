@@ -3,5 +3,7 @@ python:
     -   "3.2"
     -   "3.3"
     -   "3.4"
-
-script: python setup.py nosetests
+install:
+    - python setup.py -q install
+script:
+    - python setup.py nosetests

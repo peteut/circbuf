@@ -1,7 +1,9 @@
 import sys
 IS_PY32 = sys.version_info < (3, 3)
 if IS_PY32:
-    import contextlib2 as contextlib
+    try:
+        import contextlib2 as contextlib
+    except ImportError: pass
     from collections import Iterable
 else:
     import contextlib
@@ -239,3 +241,4 @@ def readinto(buf, readbuf):
 
     return result if result else None
 
+__version__ = '0.0.0'
