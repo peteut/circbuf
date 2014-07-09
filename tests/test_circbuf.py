@@ -148,7 +148,7 @@ def test_space_avail():
 
 @tools.raises(ValueError)
 def test_released_producer_buf():
-    buf = circbuf.CircBuf(16)
+    buf = circbuf.CircBuf()
     dut = None
 
     with buf.producer_buf as mv: dut = mv
@@ -156,13 +156,13 @@ def test_released_producer_buf():
 
 @tools.raises(ValueError)
 def test_released_consumer_buf():
-    buf = circbuf.CircBuf(16)
+    buf = circbuf.CircBuf()
     dut = None
 
     with buf.consumer_buf as mv: dut = mv
     dut[0]
 
-def test_readinto():
+def test_readinto_from_buffer():
     buf = circbuf.CircBuf(16)
     dut = functools.partial(circbuf.readinto, buf)
 

@@ -219,29 +219,29 @@ def space_avail(buf):
     return buf.buflen - 1 - len(buf)
 
 
-def readinto(buf, readbuf):
+def readinto(buf, readfrom):
     '''
     :param buf: buffer to read into
-    :param readbuf: buffer to read from
+    :param readfrom: buffer to read from or an object providing
+    readfrom#readinto
     :returns: number of bytes read
     '''
     def do(written):
         with buf.producer_buf as mv:
-            length = min(map(len, (mv, readbuf[written:])))
+            length = min(map(len, (mv, readfrom[written:])))
             if not length:
                 return written
-            mv[: length] = readbuf[: length]
+            mv[: length] = readfrom[: length]
             buf.produced(length)
         written += length
         if written == towrite or length == 0:
             return written
-
         return do(written)
 
-    if not min(space_avail(buf), len(readbuf)):
+    if not min(space_avail(buf), len(readfrom)):
         return None
 
-    towrite = len(readbuf)
+    towrite = len(readfrom)
     result = do(0)
 
     return result if result else None
