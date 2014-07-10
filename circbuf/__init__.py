@@ -3,7 +3,8 @@ IS_PY32 = sys.version_info < (3, 3)
 if IS_PY32:
     try:
         import contextlib2 as contextlib
-    except ImportError: pass
+    except ImportError:
+        pass
     from collections import Iterable
 else:
     import contextlib
@@ -13,6 +14,7 @@ import functools
 import threading
 
 __all__ = ('ResourceManager', 'CircBuf', 'readinto')
+
 
 def _require_lock(name):
     '''
@@ -63,8 +65,8 @@ class ResourceManager:
         self._release_resource()
 
 
-
 DEFAULT_BUFLEN = 2 ** 12
+
 
 class CircBuf(Iterable):
     '''
@@ -78,7 +80,7 @@ class CircBuf(Iterable):
     __slots__ = ('_buf', '_head', '_tail', '_consumer_lock', '_producer_lock',
                  '__consumer_mv', '__producer_mv')
 
-    def __init__(self, buflen=DEFAULT_BUFLEN):
+    def __init__(self, buflen=2**12):
         if buflen & (buflen - 1):
             raise ValueError('buflen must be power of 2')
         self._buf = bytearray(buflen)
@@ -222,8 +224,7 @@ def space_avail(buf):
 def readinto(buf, readfrom):
     '''
     :param buf: buffer to read into
-    :param readfrom: buffer to read from or an object providing
-    readfrom#readinto
+    :param readfrom: buffer to read from
     :returns: number of bytes read
     '''
     def do(written):
@@ -245,5 +246,17 @@ def readinto(buf, readfrom):
     result = do(0)
 
     return result if result else None
+
+
+def recv(buf, fn, *args):
+    '''
+    Helper to read from a function which receives into buf
+    :param buf: buffer to receive into
+    :param fn: receive function, accepts a buffer as first argument
+    to read into and returns the number of bytes received
+    :param args: arguments for `fn`
+    '''
+    with buf.producer_buf as mv:
+        buf.produced(fn(mv, *args))
 
 __version__ = '0.0.0'

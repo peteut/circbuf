@@ -45,6 +45,7 @@ def test_resource_manger_check_nok():
     with dut:
         pass
 
+
 def test_init():
     dut = circbuf.CircBuf(128)
 
@@ -146,6 +147,7 @@ def test_space_avail():
     consume(1)
     tools.eq_(dut(buf), 15)
 
+
 @tools.raises(ValueError)
 def test_released_producer_buf():
     buf = circbuf.CircBuf()
@@ -153,6 +155,7 @@ def test_released_producer_buf():
 
     with buf.producer_buf as mv: dut = mv
     dut[0]
+
 
 @tools.raises(ValueError)
 def test_released_consumer_buf():
@@ -162,6 +165,7 @@ def test_released_consumer_buf():
     with buf.consumer_buf as mv: dut = mv
     dut[0]
 
+
 def test_readinto_from_buffer():
     buf = circbuf.CircBuf(16)
     dut = functools.partial(circbuf.readinto, buf)
@@ -170,3 +174,18 @@ def test_readinto_from_buffer():
     tools.eq_((nbytes, bytes(buf)), (3, bytes.fromhex('001122')))
     tools.eq_(dut(bytes()), None)
     tools.eq_(*(circbuf.space_avail(buf), dut(bytes(100))))
+
+
+def test_recv():
+    buf = circbuf.CircBuf()
+    dut = functools.partial(circbuf.recv, buf)
+    recv = mock.Mock(return_value=42)
+
+    dut(recv)
+    tools.eq_(recv.call_count, 1)
+    tools.eq_(len(buf), 42)
+
+    recv.reset_mock()
+    dut(recv, 'arg')
+    tools.eq_(recv.call_count, 1)
+    tools.eq_(recv.call_args[0][-1], 'arg')
