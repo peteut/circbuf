@@ -1,1 +1,3 @@
 include *.md *.rst
+include tox.ini
+recursive-include tests *
