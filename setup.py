@@ -26,10 +26,12 @@ install_requires = []
 if sys.version_info < (3, 3):
     install_requires.append('contextlib2>=0.4')
 
+tests_require=['tox>=1.7.2'],
+
 
 class Tox(TestCommand):
     def finalize_options(self):
-        super().finalize_options()
+        TestCommand.finalize_options(self)
         self.test_args = ['-v']
         self.test_suite = True
 
@@ -50,7 +52,7 @@ setup(
     classifiers=classifiers,
     packages=find_packages(exclude=['tests']),
     install_requires=install_requires,
-    tests_require=['tox'],
+    tests_require=tests_require,
     cmdclass={'test': Tox},
     platforms='all',
 )

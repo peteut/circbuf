@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/peteut/circbuf.svg?
 branch=master)](https://travis-ci.org/peteut/circbuf)
+[![Coverage Status](https://img.shields.io/coveralls/peteut/circbuf.svg)](
+https://coveralls.io/r/peteut/circbuf?branch=master)
 
 `circbuf` implements a circular buffer for Python.
 It allows for zero copy operation, i.e. it uses `memoryview`

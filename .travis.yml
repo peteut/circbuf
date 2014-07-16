@@ -5,6 +5,10 @@ env:
     - TOXENV=py33
     - TOXENV=py34
 install:
-    - pip install -r requirements.txt
+    - python setup.py -q install
+    - pip install virtualenv
+    - pip install coveralls
 script:
-    - setup.py test
+    - python setup.py test
+after_success:
+    - coveralls
