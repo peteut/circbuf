@@ -70,7 +70,8 @@ def test_produced_requires_lock():
 def test_consumed_requires_lock():
     dut = circbuf.CircBuf()
 
-    with dut.producer_buf: dut.produced(1)
+    with dut.producer_buf:
+        dut.produced(1)
     dut.consumed(1)
 
 
@@ -78,10 +79,12 @@ def test_cnt_to_end_space_to_end():
     dut = circbuf.CircBuf(16)
 
     def produce(n):
-        with dut.producer_buf: dut.produced(n)
+        with dut.producer_buf:
+            dut.produced(n)
 
     def consume(n):
-        with dut.consumer_buf: dut.consumed(n)
+        with dut.consumer_buf:
+            dut.consumed(n)
 
     tools.eq_((dut.cnt_to_end, dut.space_to_end), (0, dut.buflen - 1))
     produce(dut.buflen - 1)
@@ -98,10 +101,12 @@ def test_iterator():
     dut = circbuf.CircBuf(16)
 
     def produce(n):
-        with dut.producer_buf: dut.produced(n)
+        with dut.producer_buf:
+            dut.produced(n)
 
     def consume(n):
-        with dut.consumer_buf: dut.consumed(n)
+        with dut.consumer_buf:
+            dut.consumed(n)
 
     with dut.producer_buf as buf:
         if IS_PY32:
@@ -122,11 +127,14 @@ def test_iterator():
 def test_iterator_wrap_around():
     dut = circbuf.CircBuf(16)
 
-    with dut.producer_buf: dut.produced(5)
+    with dut.producer_buf:
+        dut.produced(5)
     tools.eq_(len(dut), 5)
     # fill buffer
-    with dut.producer_buf as buf: dut.produced(len(buf))
-    with dut.producer_buf as buf: dut.produced(len(buf))
+    with dut.producer_buf as buf:
+        dut.produced(len(buf))
+    with dut.producer_buf as buf:
+        dut.produced(len(buf))
     # test wrap around
     tools.eq_(len(dut), 15, 'shall wrap around')
 
@@ -136,10 +144,12 @@ def test_space_avail():
     dut = circbuf.space_avail
 
     def produce(n):
-        with buf.producer_buf: buf.produced(n)
+        with buf.producer_buf:
+            buf.produced(n)
 
     def consume(n):
-        with buf.consumer_buf: buf.consumed(n)
+        with buf.consumer_buf:
+            buf.consumed(n)
 
     tools.eq_(dut(buf), 15)
     produce(1)
@@ -153,7 +163,8 @@ def test_released_producer_buf():
     buf = circbuf.CircBuf()
     dut = None
 
-    with buf.producer_buf as mv: dut = mv
+    with buf.producer_buf as mv:
+        dut = mv
     dut[0]
 
 
@@ -162,11 +173,16 @@ def test_released_consumer_buf():
     buf = circbuf.CircBuf()
     dut = None
 
-    with buf.consumer_buf as mv: dut = mv
+    with buf.consumer_buf as mv:
+        dut = mv
     dut[0]
 
 
-def test_readinto_from_buffer():
+def test_readinto_exported():
+    tools.ok_('readinto' in circbuf.__all__)
+
+
+def test_readinto():
     buf = circbuf.CircBuf(16)
     dut = functools.partial(circbuf.readinto, buf)
 
@@ -174,6 +190,10 @@ def test_readinto_from_buffer():
     tools.eq_((nbytes, bytes(buf)), (3, bytes.fromhex('001122')))
     tools.eq_(dut(bytes()), None)
     tools.eq_(*(circbuf.space_avail(buf), dut(bytes(100))))
+
+
+def test_recv_is_exported():
+    tools.ok_('recv' in circbuf.__all__)
 
 
 def test_recv():
@@ -189,3 +209,21 @@ def test_recv():
     dut(recv, 'arg')
     tools.eq_(recv.call_count, 1)
     tools.eq_(recv.call_args[0][-1], 'arg')
+
+
+def test_seek_to_pattern_is_exported():
+    tools.ok_('seek_to_pattern' in circbuf.__all__)
+
+
+def test_seek_to_pattern():
+    buf = circbuf.CircBuf()
+    dut = functools.partial(circbuf.seek_to_pattern, buf)
+
+    circbuf.readinto(buf, bytes.fromhex('11 22 2a 01 02'))
+    tools.eq_(dut(42), 2)
+    tools.eq_(tuple(buf), (1, 2))
+
+    circbuf.readinto(buf, bytes.fromhex('11 22 2a 01 02'))
+    tools.eq_(dut(bytes.fromhex('2a 01')), 1)
+    tools.eq_(tuple(buf), (2,))
+    tools.eq_(dut(42), 0)

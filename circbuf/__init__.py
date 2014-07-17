@@ -3,17 +3,20 @@ IS_PY32 = sys.version_info < (3, 3)
 if IS_PY32:
     try:
         import contextlib2 as contextlib
+        from contextlib import contextmanager
     except ImportError:
         pass
     from collections import Iterable
 else:
     import contextlib
     from collections.abc import Iterable
+    from contextlib import contextmanager
 import operator
 import functools
+import itertools
 import threading
 
-__all__ = ('ResourceManager', 'CircBuf', 'readinto')
+__all__ = ('ResourceManager', 'CircBuf', 'readinto', 'recv', 'seek_to_pattern')
 
 
 def _require_lock(name):
@@ -26,8 +29,8 @@ def _require_lock(name):
             self = args[0]
             if not getattr(self, name).locked():
                 raise RuntimeError('{1} must be acquired prior calling {0}'
-                        .format('.'.join((self.__class__.__name__,
-                            func.__name__)), name))
+                                   .format('.'.join((self.__class__.__name__,
+                                                     func.__name__)), name))
             return func(*args, **kwargs)
         return wrapper
     return decorator
@@ -80,7 +83,7 @@ class CircBuf(Iterable):
     __slots__ = ('_buf', '_head', '_tail', '_consumer_lock', '_producer_lock',
                  '__consumer_mv', '__producer_mv')
 
-    def __init__(self, buflen=2**12):
+    def __init__(self, buflen=2 ** 12):
         if buflen & (buflen - 1):
             raise ValueError('buflen must be power of 2')
         self._buf = bytearray(buflen)
@@ -259,4 +262,38 @@ def recv(buf, fn, *args):
     with buf.producer_buf as mv:
         buf.produced(fn(mv, *args))
 
-__version__ = '0.0.0'
+
+@contextmanager
+def _ignored(*exceptions):
+    try:
+        yield
+    except exceptions:
+        pass
+
+
+def seek_to_pattern(buf, pattern):
+    '''
+    Helper to seek buf to pattern
+    :param buf: buffer to seek to pattern
+    :param pattern: pattern to seek to
+    :returns: remaining buf length
+    '''
+    def check_pattern(it, pattern):
+        ch = next(it)
+        if ch != pattern[0]:
+            return
+        return True if len(pattern) == 1 else check_pattern(it, pattern[1:])
+
+    if not isinstance(pattern, Iterable):
+        pattern = (pattern,)
+
+    try:
+        while True:
+            it = itertools.dropwhile(
+                functools.partial(operator.ne, pattern[0]), buf)
+            if check_pattern(it, pattern):
+                return len(buf)
+    except StopIteration:
+        pass
+
+    return len(buf)
