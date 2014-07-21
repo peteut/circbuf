@@ -16,8 +16,7 @@ __all__ = ('ResourceManager', 'CircBuf', 'recv', 'seek_to_pattern')
 
 
 def _require_lock(name):
-    '''
-    Ensure :class:`threading.Lock` is acquired.
+    '''Ensure :class:`threading.Lock` is acquired.
     '''
     def decorator(func):
         @functools.wraps(func)
@@ -33,8 +32,7 @@ def _require_lock(name):
 
 
 class ResourceManager:
-    '''
-    Context manager that accepts acquisition and release functions,
+    '''Context manager that accepts acquisition and release functions,
     along with an optinal validation function.
     '''
 
@@ -65,8 +63,7 @@ class ResourceManager:
 
 
 class CircBuf(Iterable):
-    '''
-    An implementation of a circular buffer, derived from
+    '''An implementation of a circular buffer, derived from
     `include/linux/circ_buf.h`_.
 
     .. _`include/linux/circ_buf.h`:
@@ -86,23 +83,20 @@ class CircBuf(Iterable):
         self._producer_lock = threading.Lock()
 
     def __len__(self):
-        '''
-        :returns: count in buffer
+        ''':returns: count in buffer
         '''
         head, tail, size = self._head, self._tail, self.capacity
         return (head - tail) & (size - 1)
 
     @property
     def capacity(self):
-        '''
-        :returns: buffer length
+        ''':returns: buffer length
         '''
         return len(self._buf)
 
     @property
     def cnt_to_end(self):
-        '''
-        :returns: count up to the end of the buffer
+        ''':returns: count up to the end of the buffer
         '''
         head, tail, size = self._head, self._tail, self.capacity
         end = size - tail
@@ -111,8 +105,7 @@ class CircBuf(Iterable):
 
     @property
     def space_to_end(self):
-        '''
-        :returns: space available up to the end of the buffer
+        ''':returns: space available up to the end of the buffer
         '''
         head, tail, size = self._head, self._tail, self.capacity
         end = size - 1 - head
@@ -129,15 +122,13 @@ class CircBuf(Iterable):
 
     @property
     def space_avail(self):
-        '''
-        :returns: number of bytes available in buf
+        ''':returns: number of bytes available in the buffer
         '''
         return self.capacity - 1 - len(self)
 
     @property
     def producer_buf(self):
-        '''
-        :returns: producer buffer
+        ''':returns: producer buffer
         :rtype: :class:`memoryview`
         '''
         def acquire():
@@ -153,8 +144,7 @@ class CircBuf(Iterable):
 
     @property
     def consumer_buf(self):
-        '''
-        :returns: consumer buffer
+        ''':returns: consumer buffer
         :rtype: :class:`memoryview`
         '''
         def acquire():
@@ -170,8 +160,7 @@ class CircBuf(Iterable):
 
     @_require_lock('_producer_lock')
     def produced(self, cnt):
-        '''
-        :param cnt: written bytes
+        ''':param cnt: written bytes
         :returns: written bytes
         '''
         if cnt > self.space_to_end:
@@ -181,8 +170,7 @@ class CircBuf(Iterable):
 
     @_require_lock('_consumer_lock')
     def consumed(self, cnt):
-        '''
-        :param cnt: consumed bytes
+        ''':param cnt: consumed bytes
         :returns: consumed bytes
         '''
         if cnt > len(self):
@@ -218,8 +206,7 @@ class CircBuf(Iterable):
 
 
     def write(self, b):
-        '''
-        :param b: ``bytes`` to ``bytearray`` to write
+        ''':param b: ``bytes`` to ``bytearray`` to write
         :returns: number of bytes written
         '''
         def do(written):
@@ -244,8 +231,8 @@ class CircBuf(Iterable):
 
 
 def recv(buf, fn, *args):
-    '''
-    Helper to read from a function which receives into buf
+    '''Helper to read from a function which receives into buf
+
     :param buf: buffer to receive into
     :param fn: receive function, accepts a buffer as first argument
     to read into and returns the number of bytes received
@@ -264,8 +251,8 @@ def _ignored(*exceptions):
 
 
 def seek_to_pattern(buf, pattern):
-    '''
-    Helper to seek buf to pattern
+    '''Helper to seek buf to pattern
+
     :param buf: buffer to seek to pattern
     :param pattern: pattern to seek to
     :returns: remaining buf length
