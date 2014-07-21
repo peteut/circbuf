@@ -51,7 +51,7 @@ def test_init():
 
     tools.ok_(isinstance(dut, Iterable))
     tools.eq_(len(dut), 0)
-    tools.eq_(dut.buflen, 128)
+    tools.eq_(dut.capacity, 128)
 
 
 @tools.raises(ValueError)
@@ -86,15 +86,15 @@ def test_cnt_to_end_space_to_end():
         with dut.consumer_buf:
             dut.consumed(n)
 
-    tools.eq_((dut.cnt_to_end, dut.space_to_end), (0, dut.buflen - 1))
-    produce(dut.buflen - 1)
-    tools.eq_((dut.cnt_to_end, dut.space_to_end), (dut.buflen - 1, 0))
-    consume(dut.buflen - 1)
+    tools.eq_((dut.cnt_to_end, dut.space_to_end), (0, dut.capacity - 1))
+    produce(dut.capacity - 1)
+    tools.eq_((dut.cnt_to_end, dut.space_to_end), (dut.capacity - 1, 0))
+    consume(dut.capacity - 1)
     tools.eq_((dut.cnt_to_end, dut.space_to_end), (0, 1))
     produce(1)
-    tools.eq_((dut.cnt_to_end, dut.space_to_end), (1, dut.buflen - 2))
+    tools.eq_((dut.cnt_to_end, dut.space_to_end), (1, dut.capacity - 2))
     consume(1)
-    tools.eq_((dut.cnt_to_end, dut.space_to_end), (0, dut.buflen - 1))
+    tools.eq_((dut.cnt_to_end, dut.space_to_end), (0, dut.capacity - 1))
 
 
 def test_iterator():
@@ -141,7 +141,7 @@ def test_iterator_wrap_around():
 
 def test_space_avail():
     buf = circbuf.CircBuf(16)
-    dut = circbuf.space_avail
+    dut = lambda: buf.space_avail
 
     def produce(n):
         with buf.producer_buf:
@@ -151,11 +151,11 @@ def test_space_avail():
         with buf.consumer_buf:
             buf.consumed(n)
 
-    tools.eq_(dut(buf), 15)
+    tools.eq_(dut(), 15)
     produce(1)
-    tools.eq_(dut(buf), 14)
+    tools.eq_(dut(), 14)
     consume(1)
-    tools.eq_(dut(buf), 15)
+    tools.eq_(dut(), 15)
 
 
 @tools.raises(ValueError)
@@ -178,18 +178,14 @@ def test_released_consumer_buf():
     dut[0]
 
 
-def test_readinto_exported():
-    tools.ok_('readinto' in circbuf.__all__)
-
-
-def test_readinto():
+def test_write():
     buf = circbuf.CircBuf(16)
-    dut = functools.partial(circbuf.readinto, buf)
+    dut = buf.write
 
     nbytes = dut(bytes.fromhex('001122'))
     tools.eq_((nbytes, bytes(buf)), (3, bytes.fromhex('001122')))
     tools.eq_(dut(bytes()), None)
-    tools.eq_(*(circbuf.space_avail(buf), dut(bytes(100))))
+    tools.eq_(*(buf.space_avail, dut(bytes(100))))
 
 
 def test_recv_is_exported():
@@ -219,11 +215,11 @@ def test_seek_to_pattern():
     buf = circbuf.CircBuf()
     dut = functools.partial(circbuf.seek_to_pattern, buf)
 
-    circbuf.readinto(buf, bytes.fromhex('11 22 2a 01 02'))
+    buf.write(bytes.fromhex('11 22 2a 01 02'))
     tools.eq_(dut(42), 2)
     tools.eq_(tuple(buf), (1, 2))
 
-    circbuf.readinto(buf, bytes.fromhex('11 22 2a 01 02'))
+    buf.write(bytes.fromhex('11 22 2a 01 02'))
     tools.eq_(dut(bytes.fromhex('2a 01')), 1)
     tools.eq_(tuple(buf), (2,))
     tools.eq_(dut(42), 0)

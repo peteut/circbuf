@@ -1,22 +1,18 @@
 import sys
-IS_PY32 = sys.version_info < (3, 3)
-if IS_PY32:
-    try:
-        import contextlib2 as contextlib
-        from contextlib import contextmanager
-    except ImportError:
-        pass
-    from collections import Iterable
-else:
-    import contextlib
-    from collections.abc import Iterable
-    from contextlib import contextmanager
 import operator
 import functools
 import itertools
 import threading
+try:
+    import contextlib2 as contextlib
+    from collections import Iterable
+except ImportError:
+    import contextlib
+    from collections.abc import Iterable
+from contextlib import contextmanager
 
-__all__ = ('ResourceManager', 'CircBuf', 'readinto', 'recv', 'seek_to_pattern')
+
+__all__ = ('ResourceManager', 'CircBuf', 'recv', 'seek_to_pattern')
 
 
 def _require_lock(name):
@@ -68,9 +64,6 @@ class ResourceManager:
         self._release_resource()
 
 
-DEFAULT_BUFLEN = 2 ** 12
-
-
 class CircBuf(Iterable):
     '''
     An implementation of a circular buffer, derived from
@@ -83,10 +76,10 @@ class CircBuf(Iterable):
     __slots__ = ('_buf', '_head', '_tail', '_consumer_lock', '_producer_lock',
                  '__consumer_mv', '__producer_mv')
 
-    def __init__(self, buflen=2 ** 12):
-        if buflen & (buflen - 1):
-            raise ValueError('buflen must be power of 2')
-        self._buf = bytearray(buflen)
+    def __init__(self, size=2 ** 12):
+        if size & (size - 1):
+            raise ValueError('size must be power of 2')
+        self._buf = bytearray(size)
         self._head = 0
         self._tail = 0
         self._consumer_lock = threading.Lock()
@@ -96,11 +89,11 @@ class CircBuf(Iterable):
         '''
         :returns: count in buffer
         '''
-        head, tail, size = self._head, self._tail, self.buflen
+        head, tail, size = self._head, self._tail, self.capacity
         return (head - tail) & (size - 1)
 
     @property
-    def buflen(self):
+    def capacity(self):
         '''
         :returns: buffer length
         '''
@@ -111,7 +104,7 @@ class CircBuf(Iterable):
         '''
         :returns: count up to the end of the buffer
         '''
-        head, tail, size = self._head, self._tail, self.buflen
+        head, tail, size = self._head, self._tail, self.capacity
         end = size - tail
         n = (head + end) & (size - 1)
         return n if n < end else end
@@ -121,7 +114,7 @@ class CircBuf(Iterable):
         '''
         :returns: space available up to the end of the buffer
         '''
-        head, tail, size = self._head, self._tail, self.buflen
+        head, tail, size = self._head, self._tail, self.capacity
         end = size - 1 - head
         n = (end + tail) & (size - 1)
         return n if n <= end else end + 1
@@ -133,6 +126,13 @@ class CircBuf(Iterable):
     def _consumer_mv(self):
         buf, tail = self._buf, self._tail
         return memoryview(buf)[tail:tail + self.cnt_to_end]
+
+    @property
+    def space_avail(self):
+        '''
+        :returns: number of bytes available in buf
+        '''
+        return self.capacity - 1 - len(self)
 
     @property
     def producer_buf(self):
@@ -176,7 +176,7 @@ class CircBuf(Iterable):
         '''
         if cnt > self.space_to_end:
             raise ValueError('cnt bigger than buffer length')
-        self._head = (self._head + cnt) & (self.buflen - 1)
+        self._head = (self._head + cnt) & (self.capacity - 1)
         return cnt
 
     @_require_lock('_consumer_lock')
@@ -187,7 +187,7 @@ class CircBuf(Iterable):
         '''
         if cnt > len(self):
             raise ValueError('cnt bigger than buffer length')
-        self._tail = (self._tail + cnt) & (self.buflen - 1)
+        self._tail = (self._tail + cnt) & (self.capacity - 1)
         return cnt
 
     def __iter__(self):
@@ -202,12 +202,12 @@ class CircBuf(Iterable):
                 self._consumer_lock.release()
 
             with ResourceManager(acquire, release) as mv:
-                if IS_PY32:
+                try:
                     for val in map(operator.itemgetter(0), mv):
                         self.consumed(1)
                         yield val
-                else:
-                    for val in mv:
+                except TypeError:
+                    for val in bytes(mv):
                         self.consumed(1)
                         yield val
 
@@ -217,38 +217,30 @@ class CircBuf(Iterable):
         return generator()
 
 
-def space_avail(buf):
-    '''
-    :returns: number of bytes available in buf
-    '''
-    return buf.buflen - 1 - len(buf)
-
-
-def readinto(buf, readfrom):
-    '''
-    :param buf: buffer to read into
-    :param readfrom: buffer to read from
-    :returns: number of bytes read
-    '''
-    def do(written):
-        with buf.producer_buf as mv:
-            length = min(map(len, (mv, readfrom[written:])))
-            if not length:
+    def write(self, b):
+        '''
+        :param b: ``bytes`` to ``bytearray`` to write
+        :returns: number of bytes written
+        '''
+        def do(written):
+            with self.producer_buf as mv:
+                length = min(map(len, (mv, b[written:])))
+                if not length:
+                    return written
+                mv[: length] = b[: length]
+                self.produced(length)
+            written += length
+            if written == towrite or length == 0:
                 return written
-            mv[: length] = readfrom[: length]
-            buf.produced(length)
-        written += length
-        if written == towrite or length == 0:
-            return written
-        return do(written)
+            return do(written)
 
-    if not min(space_avail(buf), len(readfrom)):
-        return None
+        if not min(self.space_avail, len(b)):
+            return None
 
-    towrite = len(readfrom)
-    result = do(0)
+        towrite = len(b)
+        result = do(0)
 
-    return result if result else None
+        return result if result else None
 
 
 def recv(buf, fn, *args):
