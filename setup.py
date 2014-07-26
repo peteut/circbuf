@@ -8,7 +8,7 @@ if sys.version_info < (3, 3):
 
 setup(
     install_requires=install_requires,
-    platforms='all',
-    setup_requires=['pbr'],
+    setup_requires=['pbr', 'd2to1'],
     pbr=True,
+    d2to1=True,
 )
